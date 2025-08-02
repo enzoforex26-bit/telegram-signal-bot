@@ -23,8 +23,9 @@ async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["experience"] = update.message.text
+
     user_info = f"""
-📥 Neuer Benutzer ist beigetreten:
+📥 Neuer Benutzer:
 👤 Name: {context.user_data['name']}
 📧 E-Mail: {context.user_data['email']}
 📊 Erfahrung: {context.user_data['experience']}
@@ -33,18 +34,19 @@ async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Danke! Du wirst bald freigeschaltet. 📈")
     return ConversationHandler.END
 
+app = ApplicationBuilder().token(TOKEN).build()
+
+conv_handler = ConversationHandler(
+    entry_points=[CommandHandler("start", start)],
+    states={
+        NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
+        EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_email)],
+        EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_experience)],
+    },
+    fallbacks=[],
+)
+
+app.add_handler(conv_handler)
+
 if __name__ == "__main__":
-    app = ApplicationBuilder().token(TOKEN).build()
-
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={
-            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
-            EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_email)],
-            EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_experience)],
-        },
-        fallbacks=[],
-    )
-
-    app.add_handler(conv_handler)
     app.run_polling()
