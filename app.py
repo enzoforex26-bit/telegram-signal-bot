@@ -9,12 +9,11 @@ from telegram.ext import (
     CallbackContext,
 )
 import threading
-import requests
+import os
 
 BOT_TOKEN = "8226474584:AAGcRUWTlDLACwMmHLnK8D-GREeUsoUXYPQ"
 GROUP_ID = -1002845601347
 BROKER_LINK = None
-
 NAME, EMAIL, EXPERIENCE = range(3)
 
 app = Flask(__name__)
