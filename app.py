@@ -1,35 +1,50 @@
-from flask import Flask, request
-import requests
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
-app = Flask(__name__)
+TOKEN = "8226474584:AAGcRUWTlDLACwMmHLnK8D-GREeUsoUXYPQ"
+ADMIN_ID = 1785174843
+GROUP_ID = -1002845601347
 
-BOT_TOKEN = "7070480242:AAH7OgGyg7RA3Q_gog0LEQ43WqNQQo2sUew"
-CHAT_ID = -1002031929245  
+NAME, EMAIL, EXPERIENCE = range(3)
 
-@app.route('/send', methods=['POST'])
-def send_signal():
-    data = request.json
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Willkommen bei Swiss Gold Trades 🪙\nWie ist dein Name?")
+    return NAME
 
-    pair = data.get("pair")
-    entry = float(data.get("entry"))
-    sl = round(entry - 5, 2)
-    tp = round(entry + 15, 2)
+async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["name"] = update.message.text
+    await update.message.reply_text("Danke! Wie ist deine E-Mail-Adresse?")
+    return EMAIL
 
-    message = f"""🚨 <b>BUY {pair}</b>
-Entry: {entry}
-SL: {sl}
-TP: {tp}
-#SwissGoldTrades"""
+async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["email"] = update.message.text
+    await update.message.reply_text("Wie viel Trading-Erfahrung hast du?")
+    return EXPERIENCE
 
-    telegram_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": message,
-        "parse_mode": "HTML"
-    }
+async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["experience"] = update.message.text
+    user_info = f"""
+📥 Neuer Benutzer ist beigetreten:
+👤 Name: {context.user_data['name']}
+📧 E-Mail: {context.user_data['email']}
+📊 Erfahrung: {context.user_data['experience']}
+    """
+    await context.bot.send_message(chat_id=GROUP_ID, text=user_info)
+    await update.message.reply_text("Danke! Du wirst bald freigeschaltet. 📈")
+    return ConversationHandler.END
 
-    r = requests.post(telegram_url, data=payload)
-    return r.text
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TOKEN).build()
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
+            EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_email)],
+            EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_experience)],
+        },
+        fallbacks=[],
+    )
+
+    app.add_handler(conv_handler)
+    app.run_polling()
