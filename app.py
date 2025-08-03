@@ -7,10 +7,7 @@ from telegram.ext import (
     CallbackContext,
     ConversationHandler,
 )
-from flask import Flask, request
 import requests
-import json
-import threading
 
 BOT_TOKEN = "8226474584:AAGcRUWTdLACwMmHLnK8D-GREeUsoUXYPQ"
 ADMIN_ID = 1785174843
@@ -19,7 +16,6 @@ BROKER_LINK = None
 
 NAME, EMAIL, EXPERIENCE = range(3)
 
-app = Flask(__name__)
 bot = Bot(BOT_TOKEN)
 
 def start(update: Update, context: CallbackContext):
@@ -62,18 +58,6 @@ def cancel(update: Update, context: CallbackContext):
     update.message.reply_text("Abgebrochen.")
     return ConversationHandler.END
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    data = request.json
-    message = data.get("message", "⚠️ Kein Inhalt erhalten.")
-    telegram_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": GROUP_ID,
-        "text": message
-    }
-    requests.post(telegram_url, json=payload)
-    return "OK", 200
-
 def run_telegram():
     updater = Updater(BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
@@ -92,9 +76,5 @@ def run_telegram():
     updater.start_polling()
     updater.idle()
 
-def run_flask():
-    app.run(host="0.0.0.0", port=5000)
-
 if __name__ == "__main__":
-    threading.Thread(target=run_telegram).start()
-    threading.Thread(target=run_flask).start()
+    run_telegram()
