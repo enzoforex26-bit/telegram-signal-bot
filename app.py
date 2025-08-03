@@ -11,7 +11,7 @@ from telegram.ext import (
 BOT_TOKEN = "8226474584:AAGcRUWTdLACwMmHLnK8D-GREeUsoUXYPQ"
 ADMIN_ID = 1785174843
 GROUP_ID = -1002845601347
-BROKER_LINK = None
+BROKER_LINK = None  # Optional: z. B. "https://dein-broker.com/link"
 
 NAME, EMAIL, EXPERIENCE = range(3)
 
@@ -33,23 +33,21 @@ def get_email(update: Update, context: CallbackContext):
 
 def get_experience(update: Update, context: CallbackContext):
     context.user_data["experience"] = update.message.text
-    update.message.reply_text("Danke.")
-
     name = context.user_data["name"]
     user_id = update.effective_user.id
 
     try:
-        # Direktnachricht mit Link senden
+        # ✅ Direktnachricht mit Link
         bot.send_message(chat_id=user_id, text="✅ Danke! Hier ist der Link zur Signalgruppe:\nhttps://t.me/Swissgoldsingal")
-        
-        # Info in die Gruppe posten
+
+        # 📢 Begrüßung in Gruppe
         bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
 
-        # Broker-Link optional senden
+        # 🔗 Broker-Link (optional)
         if BROKER_LINK:
             bot.send_message(chat_id=GROUP_ID, text=f"{name}, hier ist dein Broker-Link:\n{BROKER_LINK}")
-        
-        # Optional: Versuch, automatisch einzuladen (funktioniert nicht immer!)
+
+        # 🤖 Einladung (funktioniert nur wenn Telegram es erlaubt)
         try:
             bot.invite_chat_member(chat_id=GROUP_ID, user_id=user_id)
         except Exception as err:
