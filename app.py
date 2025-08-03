@@ -39,14 +39,21 @@ def get_experience(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
 
     try:
-        bot.send_message(chat_id=user_id, text="Hier ist der Gruppenlink:\nhttps://t.me/Swissgoldsingal")
-        bot.send_message(chat_id=user_id, text="✅ Danke! Du wirst gleich in die Gruppe aufgenommen.")
+        # Direktnachricht mit Link senden
+        bot.send_message(chat_id=user_id, text="✅ Danke! Hier ist der Link zur Signalgruppe:\nhttps://t.me/Swissgoldsingal")
+        
+        # Info in die Gruppe posten
         bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
 
+        # Broker-Link optional senden
         if BROKER_LINK:
             bot.send_message(chat_id=GROUP_ID, text=f"{name}, hier ist dein Broker-Link:\n{BROKER_LINK}")
-
-        bot.invite_chat_member(chat_id=GROUP_ID, user_id=user_id)
+        
+        # Optional: Versuch, automatisch einzuladen (funktioniert nicht immer!)
+        try:
+            bot.invite_chat_member(chat_id=GROUP_ID, user_id=user_id)
+        except Exception as err:
+            print("⚠️ Einladung nicht möglich:", err)
 
     except Exception as e:
         print("❌ Fehler beim Senden oder Einladen:", e)
