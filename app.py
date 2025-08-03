@@ -49,7 +49,7 @@ def get_experience(update: Update, context: CallbackContext):
         bot.invite_chat_member(chat_id=GROUP_ID, user_id=user_id)
 
     except Exception as e:
-        print("Fehler beim Senden oder Einladen:", e)
+        print("❌ Fehler beim Senden oder Einladen:", e)
 
     return ConversationHandler.END
 
