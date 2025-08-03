@@ -1,4 +1,3 @@
-import threading
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import (
@@ -9,21 +8,21 @@ from telegram.ext import (
     ConversationHandler,
     CallbackContext,
 )
+import threading
+import requests
 
 # Konfiguration
-BOT_TOKEN = "8226474584:AAGcRUWTdLAcwMmHLnKBD-GREeUsoUXYPQ"
+BOT_TOKEN = "8226474584:AAGcRUWTlDLACwMmHLnK8D-GREeUsoUXYPQ"
 GROUP_ID = -1002845601347
 GROUP_LINK = "https://t.me/swissgoldsingal"
 
 # Flask App
 app = Flask(__name__)
-bot = Bot(token=BOT_TOKEN)
-updater = None  # global für Webhook Zugriff
+bot = Bot(BOT_TOKEN)
 
 # States
 NAME, EMAIL, EXPERIENCE = range(3)
 
-# Telegram Bot Logik
 def start(update: Update, context: CallbackContext):
     update.message.reply_text("Willkommen! Wie heisst du?")
     return NAME
@@ -39,27 +38,39 @@ def get_email(update: Update, context: CallbackContext):
     return EXPERIENCE
 
 def get_experience(update: Update, context: CallbackContext):
+    name = context.user_data["name"]
     context.user_data["experience"] = update.message.text
-    update.message.reply_text(f"📈 Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
+    user_id = update.message.from_user.id
+
+    try:
+        bot.send_message(chat_id=user_id, text=f"📈 Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
+        bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
+    except Exception as e:
+        print("Fehler beim Senden:", e)
+
     return ConversationHandler.END
 
-# Webhook für TradingView
+def cancel(update: Update, context: CallbackContext):
+    update.message.reply_text("Abgebrochen.")
+    return ConversationHandler.END
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    global updater
     data = request.json
-    msg = data.get("message", "⚠️ Kein Text enthalten")
-    if updater:
-        bot.send_message(chat_id=GROUP_ID, text=msg)
+    message = data.get("message", "⚠️ Kein Inhalt erhalten.")
+    try:
+        bot.send_message(chat_id=GROUP_ID, text=message)
         return "OK", 200
-    else:
-        return "❌ Bot nicht bereit", 500
+    except Exception as e:
+        print("Webhook-Fehler:", e)
+        return "Fehler", 500
 
-# Bot starten
-def run_telegram_bot():
-    global updater
-    updater = Updater(token=BOT_TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
+def run_flask():
+    app.run(host="0.0.0.0", port=5000)
+
+def run_telegram():
+    updater = Updater(BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -68,18 +79,13 @@ def run_telegram_bot():
             EMAIL: [MessageHandler(Filters.text & ~Filters.command, get_email)],
             EXPERIENCE: [MessageHandler(Filters.text & ~Filters.command, get_experience)],
         },
-        fallbacks=[],
+        fallbacks=[CommandHandler("cancel", cancel)],
     )
 
-    dispatcher.add_handler(conv_handler)
-    print("✅ Telegram-Bot läuft...")
+    dp.add_handler(conv_handler)
     updater.start_polling()
     updater.idle()
 
-# Flask & Bot gleichzeitig starten
-def start_all():
-    threading.Thread(target=run_telegram_bot).start()
-    app.run(host="0.0.0.0", port=5000)
-
 if __name__ == "__main__":
-    start_all()
+    threading.Thread(target=run_flask).start()
+    run_telegram()
