@@ -1,13 +1,13 @@
 import threading
 import asyncio
 from flask import Flask, request
-from telegram import Bot, Update
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
+    ContextTypes,
     CommandHandler,
     MessageHandler,
     ConversationHandler,
-    ContextTypes,
     filters,
 )
 
@@ -16,9 +16,9 @@ BOT_TOKEN = "8226474584:AAGcRUWTdLAcwMmHLnKBD-GREeUsoUXYPQ"
 GROUP_ID = -1002845601347
 GROUP_LINK = "https://t.me/swissgoldsingal"
 
-# Flask App für Webhook
+# Flask App
 app = Flask(__name__)
-bot = Bot(BOT_TOKEN)
+application = None  # globale Variable für Zugriff in Webhook
 
 # States
 NAME, EMAIL, EXPERIENCE = range(3)
@@ -46,14 +46,19 @@ async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Webhook-Endpunkt für TradingView
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    global application
     data = request.json
     msg = data.get("message", "⚠️ Kein Text enthalten")
-    asyncio.run(bot.send_message(chat_id=GROUP_ID, text=msg))
-    return "OK", 200
+    if application:
+        asyncio.run(application.bot.send_message(chat_id=GROUP_ID, text=msg))
+        return "OK", 200
+    else:
+        return "Bot nicht bereit", 500
 
 # Telegram-Bot starten
 async def telegram_bot():
-    app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
+    global application
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -65,15 +70,14 @@ async def telegram_bot():
         fallbacks=[],
     )
 
-    app_bot.add_handler(conv_handler)
+    application.add_handler(conv_handler)
     print("✅ Telegram-Bot läuft...")
-    await app_bot.run_polling()
+    await application.run_polling()
 
-# Flask + Telegram parallel starten
-def start_bot():
-    asyncio.run(telegram_bot())
+# Flask und Telegram parallel starten
+def start_all():
+    threading.Thread(target=lambda: asyncio.run(telegram_bot())).start()
+    app.run(host="0.0.0.0", port=5000)
 
 if __name__ == "__main__":
-    threading.Thread(target=start_bot).start()
-    print("🚀 Flask-Server läuft...")
-    app.run(host="0.0.0.0", port=5000)
+    start_all()
