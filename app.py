@@ -1,6 +1,4 @@
 import threading
-import logging
-import json
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import (
@@ -12,11 +10,6 @@ from telegram.ext import (
     CallbackContext,
 )
 
-# Logging (für Debug-Zwecke)
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
-
 # Konfiguration
 BOT_TOKEN = "8226474584:AAGcRUWTdLAcwMmHLnKBD-GREeUsoUXYPQ"
 GROUP_ID = -1002845601347
@@ -25,7 +18,7 @@ GROUP_LINK = "https://t.me/swissgoldsingal"
 # Flask App
 app = Flask(__name__)
 bot = Bot(token=BOT_TOKEN)
-updater = None  # Wird später gesetzt
+updater = None  # global für Webhook Zugriff
 
 # States
 NAME, EMAIL, EXPERIENCE = range(3)
@@ -50,7 +43,7 @@ def get_experience(update: Update, context: CallbackContext):
     update.message.reply_text(f"📈 Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
     return ConversationHandler.END
 
-# Webhook-Endpunkt für TradingView
+# Webhook für TradingView
 @app.route("/webhook", methods=["POST"])
 def webhook():
     global updater
@@ -62,7 +55,7 @@ def webhook():
     else:
         return "❌ Bot nicht bereit", 500
 
-# Telegram Bot starten
+# Bot starten
 def run_telegram_bot():
     global updater
     updater = Updater(token=BOT_TOKEN, use_context=True)
@@ -83,7 +76,7 @@ def run_telegram_bot():
     updater.start_polling()
     updater.idle()
 
-# Telegram & Flask parallel starten
+# Flask & Bot gleichzeitig starten
 def start_all():
     threading.Thread(target=run_telegram_bot).start()
     app.run(host="0.0.0.0", port=5000)
