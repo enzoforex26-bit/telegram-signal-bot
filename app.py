@@ -1,7 +1,7 @@
 import threading
 import asyncio
 from flask import Flask, request
-from telegram import Update
+from telegram import Update, Bot
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
@@ -18,7 +18,7 @@ GROUP_LINK = "https://t.me/swissgoldsingal"
 
 # Flask App
 app = Flask(__name__)
-application = None  # globale Variable für Zugriff in Webhook
+bot_instance = Bot(BOT_TOKEN)  # getrenntes Bot-Objekt nur für Webhook
 
 # States
 NAME, EMAIL, EXPERIENCE = range(3)
@@ -43,22 +43,20 @@ async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📈 Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
     return ConversationHandler.END
 
-# Webhook-Endpunkt für TradingView
+# Webhook für TradingView
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    global application
     data = request.json
     msg = data.get("message", "⚠️ Kein Text enthalten")
-    if application:
-        asyncio.run(application.bot.send_message(chat_id=GROUP_ID, text=msg))
-        return "OK", 200
-    else:
-        return "Bot nicht bereit", 500
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(bot_instance.send_message(chat_id=GROUP_ID, text=msg))
+    loop.close()
+    return "OK", 200
 
 # Telegram-Bot starten
 async def telegram_bot():
-    global application
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
+    app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -70,11 +68,11 @@ async def telegram_bot():
         fallbacks=[],
     )
 
-    application.add_handler(conv_handler)
+    app_bot.add_handler(conv_handler)
     print("✅ Telegram-Bot läuft...")
-    await application.run_polling()
+    await app_bot.run_polling()
 
-# Flask und Telegram parallel starten
+# Flask + Telegram parallel starten
 def start_all():
     threading.Thread(target=lambda: asyncio.run(telegram_bot())).start()
     app.run(host="0.0.0.0", port=5000)
