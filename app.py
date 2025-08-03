@@ -7,7 +7,6 @@ from telegram.ext import (
     CallbackContext,
     ConversationHandler,
 )
-import requests
 
 BOT_TOKEN = "8226474584:AAGcRUWTdLACwMmHLnK8D-GREeUsoUXYPQ"
 ADMIN_ID = 1785174843
@@ -58,7 +57,7 @@ def cancel(update: Update, context: CallbackContext):
     update.message.reply_text("Abgebrochen.")
     return ConversationHandler.END
 
-def run_telegram():
+def main():
     updater = Updater(BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
 
@@ -77,4 +76,4 @@ def run_telegram():
     updater.idle()
 
 if __name__ == "__main__":
-    run_telegram()
+    main()
