@@ -1,3 +1,4 @@
+import threading
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import (
@@ -5,16 +6,15 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     filters,
-    ContextTypes,
     ConversationHandler,
+    ContextTypes,
 )
 import asyncio
-import threading
 
 # Konfiguration
-BOT_TOKEN = "8226474584:AAGcRUWTdLACwMmHLnKBD-GREeUsoUXYPQ"
+BOT_TOKEN = "8226474584:AAGcRUWTdLAcwMmHLnKBD-GREeUsoUXYPQ"
 GROUP_ID = -1002845601347
-GROUP_LINK = "https://t.me/Swissgoldsingal"
+GROUP_LINK = "https://t.me/swissgoldsingal"
 
 # Flask App
 app = Flask(__name__)
@@ -40,10 +40,10 @@ async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["experience"] = update.message.text
-    await update.message.reply_text(f"✅ Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
+    await update.message.reply_text(f"📈 Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
     return ConversationHandler.END
 
-# Flask Webhook für TradingView
+# Webhook für TradingView
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
