@@ -36,10 +36,10 @@ def get_email(update: Update, context: CallbackContext):
     return EXPERIENCE
 
 def get_experience(update: Update, context: CallbackContext):
-    name = context.user_data["name"]
     context.user_data["experience"] = update.message.text
-    user_id = update.message.from_user.id
-
+    update.message.reply_text("Danke.")
+    update.message.reply_text("https://t.me/SwissGoldsignal")
+    return ConversationHandler.END
     try:
         bot.send_message(chat_id=user_id, text="✅ Danke! Du wirst gleich in die Gruppe aufgenommen.")
         bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
