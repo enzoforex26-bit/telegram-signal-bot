@@ -1,5 +1,6 @@
 import threading
 import logging
+import json
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import (
@@ -10,10 +11,11 @@ from telegram.ext import (
     ConversationHandler,
     CallbackContext,
 )
-import json
 
-# Logging (hilfreich für Debug)
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+# Logging (für Debug-Zwecke)
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 
 # Konfiguration
 BOT_TOKEN = "8226474584:AAGcRUWTdLAcwMmHLnKBD-GREeUsoUXYPQ"
@@ -22,7 +24,8 @@ GROUP_LINK = "https://t.me/swissgoldsingal"
 
 # Flask App
 app = Flask(__name__)
-updater = None  # global für webhook Zugriff
+bot = Bot(token=BOT_TOKEN)
+updater = None  # Wird später gesetzt
 
 # States
 NAME, EMAIL, EXPERIENCE = range(3)
@@ -47,20 +50,20 @@ def get_experience(update: Update, context: CallbackContext):
     update.message.reply_text(f"📈 Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
     return ConversationHandler.END
 
-# Webhook für TradingView
+# Webhook-Endpunkt für TradingView
 @app.route("/webhook", methods=["POST"])
 def webhook():
     global updater
     data = request.json
     msg = data.get("message", "⚠️ Kein Text enthalten")
     if updater:
-        bot = updater.bot
         bot.send_message(chat_id=GROUP_ID, text=msg)
         return "OK", 200
-    return "❌ Bot nicht bereit", 500
+    else:
+        return "❌ Bot nicht bereit", 500
 
-# Bot starten
-def run_bot():
+# Telegram Bot starten
+def run_telegram_bot():
     global updater
     updater = Updater(token=BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
@@ -76,14 +79,13 @@ def run_bot():
     )
 
     dispatcher.add_handler(conv_handler)
-
-    print("✅ Bot läuft...")
+    print("✅ Telegram-Bot läuft...")
     updater.start_polling()
     updater.idle()
 
-# Start parallel Flask + Telegram Bot
+# Telegram & Flask parallel starten
 def start_all():
-    threading.Thread(target=run_bot).start()
+    threading.Thread(target=run_telegram_bot).start()
     app.run(host="0.0.0.0", port=5000)
 
 if __name__ == "__main__":
