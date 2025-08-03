@@ -1,4 +1,5 @@
 import threading
+import asyncio
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import (
@@ -9,7 +10,6 @@ from telegram.ext import (
     ConversationHandler,
     ContextTypes,
 )
-import asyncio
 
 # Konfiguration
 BOT_TOKEN = "8226474584:AAGcRUWTdLAcwMmHLnKBD-GREeUsoUXYPQ"
