@@ -1,3 +1,6 @@
+import threading
+import asyncio
+from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import (
     Updater,
@@ -7,19 +10,21 @@ from telegram.ext import (
     ConversationHandler,
     CallbackContext,
 )
-from flask import Flask, request
-import threading
-import requests
 
+# Konfiguration
 BOT_TOKEN = "8226474584:AAGcRUWTdLAcwMmHLnKBD-GREeUsoUXYPQ"
 GROUP_ID = -1002845601347
 GROUP_LINK = "https://t.me/swissgoldsingal"
 
+# Flask App
+app = Flask(__name__)
+bot = Bot(token=BOT_TOKEN)
+updater = None
+
+# States
 NAME, EMAIL, EXPERIENCE = range(3)
 
-app = Flask(__name__)
-bot = Bot(BOT_TOKEN)
-
+# Telegram Bot Logik
 def start(update: Update, context: CallbackContext):
     update.message.reply_text("Willkommen! Wie heisst du?")
     return NAME
@@ -39,19 +44,18 @@ def get_experience(update: Update, context: CallbackContext):
     update.message.reply_text(f"📈 Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
     return ConversationHandler.END
 
-@app.route('/webhook', methods=['POST'])
+# Webhook-Endpunkt für TradingView
+@app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
-    message = data.get("message", "⚠️ Kein Text enthalten")
-    try:
-        bot.send_message(chat_id=GROUP_ID, text=message)
-        return "OK", 200
-    except Exception as e:
-        print("Webhook-Fehler:", e)
-        return "Fehler", 500
+    msg = data.get("message", "⚠️ Kein Text enthalten")
+    bot.send_message(chat_id=GROUP_ID, text=msg)
+    return "OK", 200
 
-def run_telegram():
-    updater = Updater(BOT_TOKEN, use_context=True)
+# Telegram-Bot starten
+def run_telegram_bot():
+    global updater
+    updater = Updater(token=BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
@@ -65,12 +69,14 @@ def run_telegram():
     )
 
     dp.add_handler(conv_handler)
+    print("✅ Telegram-Bot läuft...")
     updater.start_polling()
     updater.idle()
 
-def run_flask():
-    app.run(host='0.0.0.0', port=5000)
+# Telegram und Flask parallel starten
+def start_all():
+    threading.Thread(target=run_telegram_bot).start()
+    app.run(host="0.0.0.0", port=5000)
 
-if __name__ == '__main__':
-    threading.Thread(target=run_telegram).start()
-    run_flask()
+if __name__ == "__main__":
+    start_all()
