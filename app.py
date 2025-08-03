@@ -1,4 +1,5 @@
-from telegram import Update, Bot
+from flask import Flask, request
+from telegram import Bot, Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -7,12 +8,11 @@ from telegram.ext import (
     ContextTypes,
     ConversationHandler,
 )
-from flask import Flask, request
-import threading
 import asyncio
+import threading
 
 # Konfiguration
-BOT_TOKEN = "8226474584:AAGcRUWTdLACwMmHLnK8D-GREeUsoUXYPQ"
+BOT_TOKEN = "8226474584:AAGcRUWTdLACwMmHLnKBD-GREeUsoUXYPQ"
 GROUP_ID = -1002845601347
 GROUP_LINK = "https://t.me/Swissgoldsingal"
 
@@ -68,10 +68,7 @@ async def telegram_bot():
     app_bot.add_handler(conv_handler)
     await app_bot.run_polling()
 
-# Beide Services starten
-def flask_thread():
-    app.run(host="0.0.0.0", port=5000)
-
+# Flask + Telegram parallel starten
 if __name__ == "__main__":
-    threading.Thread(target=flask_thread).start()
-    asyncio.run(telegram_bot())
+    threading.Thread(target=lambda: asyncio.run(telegram_bot())).start()
+    app.run(host="0.0.0.0", port=5000)
