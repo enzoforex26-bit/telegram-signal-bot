@@ -1,5 +1,5 @@
 from telegram import Update, Bot
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, CallbackContext
 from flask import Flask, request
 import requests
 import json
@@ -30,6 +30,8 @@ async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["experience"] = update.message.text
+    await update.message.reply_text("Danke.")
+
     name = context.user_data["name"]
     user_id = update.message.from_user.id
 
@@ -38,10 +40,10 @@ async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
 
     if BROKER_LINK:
-        await bot.send_message(chat_id=GROUP_ID, text=f"📎 {name}, hier ist dein Broker-Link:\n{BROKER_LINK}")
+        await bot.send_message(chat_id=GROUP_ID, text=f"📈 {name}, hier ist dein Broker-Link:\n{BROKER_LINK}")
 
     try:
-        await bot.invite_chat_member(chat_id=GROUP_ID, user_id=user_id)
+        await bot.add_chat_members(chat_id=GROUP_ID, user_ids=[user_id])
     except Exception as e:
         print("Fehler beim Hinzufügen:", e)
 
@@ -70,5 +72,5 @@ conv_handler = ConversationHandler(
         EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_email)],
         EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_experience)],
     },
-    fallbacks=[CommandHandler("cancel", cancel)]
+    fallbacks=[CommandHandler("cancel", cancel)],
 )
