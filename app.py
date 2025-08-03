@@ -41,19 +41,20 @@ def get_experience(update: Update, context: CallbackContext):
     update.message.reply_text("Danke.")
 
     name = context.user_data["name"]
-    user_id = update.message.from_user.id
-
-    bot.send_message(chat_id=user_id, text="Hier ist der Gruppenlink:\nhttps://t.me/Swissgoldsingal")
-    bot.send_message(chat_id=user_id, text="✅ Danke! Du wirst gleich in die Gruppe aufgenommen.")
-    bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
-
-    if BROKER_LINK:
-        bot.send_message(chat_id=GROUP_ID, text=f"{name}, hier ist dein Broker-Link:\n{BROKER_LINK}")
+    user_id = update.effective_user.id
 
     try:
+        bot.send_message(chat_id=user_id, text="Hier ist der Gruppenlink:\nhttps://t.me/Swissgoldsingal")
+        bot.send_message(chat_id=user_id, text="✅ Danke! Du wirst gleich in die Gruppe aufgenommen.")
+        bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
+
+        if BROKER_LINK:
+            bot.send_message(chat_id=GROUP_ID, text=f"{name}, hier ist dein Broker-Link:\n{BROKER_LINK}")
+
         bot.invite_chat_member(chat_id=GROUP_ID, user_id=user_id)
+
     except Exception as e:
-        print("Fehler beim Hinzufügen:", e)
+        print("Fehler beim Senden oder Einladen:", e)
 
     return ConversationHandler.END
 
