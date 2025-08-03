@@ -6,9 +6,9 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
-    filters,
     ConversationHandler,
     ContextTypes,
+    filters,
 )
 
 # Konfiguration
@@ -16,7 +16,7 @@ BOT_TOKEN = "8226474584:AAGcRUWTdLAcwMmHLnKBD-GREeUsoUXYPQ"
 GROUP_ID = -1002845601347
 GROUP_LINK = "https://t.me/swissgoldsingal"
 
-# Flask App
+# Flask App für Webhook
 app = Flask(__name__)
 bot = Bot(BOT_TOKEN)
 
@@ -43,7 +43,7 @@ async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📈 Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
     return ConversationHandler.END
 
-# Webhook für TradingView
+# Webhook-Endpunkt für TradingView
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
@@ -51,7 +51,7 @@ def webhook():
     asyncio.run(bot.send_message(chat_id=GROUP_ID, text=msg))
     return "OK", 200
 
-# Bot starten
+# Telegram-Bot starten
 async def telegram_bot():
     app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -66,9 +66,14 @@ async def telegram_bot():
     )
 
     app_bot.add_handler(conv_handler)
+    print("✅ Telegram-Bot läuft...")
     await app_bot.run_polling()
 
 # Flask + Telegram parallel starten
+def start_bot():
+    asyncio.run(telegram_bot())
+
 if __name__ == "__main__":
-    threading.Thread(target=lambda: asyncio.run(telegram_bot())).start()
+    threading.Thread(target=start_bot).start()
+    print("🚀 Flask-Server läuft...")
     app.run(host="0.0.0.0", port=5000)
