@@ -1,57 +1,54 @@
+from telegram import Update, Bot
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 from flask import Flask, request
-from telegram import Bot, Update
-from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    ConversationHandler,
-    CallbackContext,
-)
-import threading
-import os
+import requests
+import json
 
 BOT_TOKEN = "8226474584:AAGcRUWTlDLACwMmHLnK8D-GREeUsoUXYPQ"
+ADMIN_ID = 1785174843
 GROUP_ID = -1002845601347
 BROKER_LINK = None
+
 NAME, EMAIL, EXPERIENCE = range(3)
 
 app = Flask(__name__)
 bot = Bot(BOT_TOKEN)
-updater = Updater(BOT_TOKEN, use_context=True)
-dispatcher = updater.dispatcher
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Willkommen! Wie heisst du?")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Willkommen! Wie heisst du?")
     return NAME
 
-def get_name(update: Update, context: CallbackContext):
+async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["name"] = update.message.text
-    update.message.reply_text("Was ist deine E-Mail?")
+    await update.message.reply_text("Was ist deine E-Mail?")
     return EMAIL
 
-def get_email(update: Update, context: CallbackContext):
+async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["email"] = update.message.text
-    update.message.reply_text("Wie viel Trading-Erfahrung hast du?")
+    await update.message.reply_text("Wie viel Trading-Erfahrung hast du?")
     return EXPERIENCE
 
-def get_experience(update: Update, context: CallbackContext):
+async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["experience"] = update.message.text
-    update.message.reply_text("Danke.")
     name = context.user_data["name"]
     user_id = update.message.from_user.id
-    bot.send_message(chat_id=user_id, text="Hier ist der Gruppenlink:\nhttps://t.me/Swissgoldsingal")
-    bot.send_message(chat_id=user_id, text="✅ Danke! Du wirst gleich in die Gruppe aufgenommen.")
-    bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
+
+    await bot.send_message(chat_id=user_id, text="Hier ist der Gruppenlink:\nhttps://t.me/Swissgoldsingal")
+    await bot.send_message(chat_id=user_id, text="✅ Danke! Du wirst gleich in die Gruppe aufgenommen.")
+    await bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
 
     if BROKER_LINK:
-        bot.send_message(chat_id=GROUP_ID, text=f"📈 {name}, hier ist dein Broker-Link:\n{BROKER_LINK}")
+        await bot.send_message(chat_id=GROUP_ID, text=f"📎 {name}, hier ist dein Broker-Link:\n{BROKER_LINK}")
 
-    bot.invite_chat_member(chat_id=GROUP_ID, user_id=user_id)
+    try:
+        await bot.invite_chat_member(chat_id=GROUP_ID, user_id=user_id)
+    except Exception as e:
+        print("Fehler beim Hinzufügen:", e)
 
     return ConversationHandler.END
-def cancel(update: Update, context: CallbackContext):
-    update.message.reply_text("Abgebrochen.")
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Abgebrochen.")
     return ConversationHandler.END
 
 @app.route("/webhook", methods=["POST"])
@@ -69,22 +66,9 @@ def webhook():
 conv_handler = ConversationHandler(
     entry_points=[CommandHandler("start", start)],
     states={
-        NAME: [MessageHandler(Filters.text & ~Filters.command, get_name)],
-        EMAIL: [MessageHandler(Filters.text & ~Filters.command, get_email)],
-        EXPERIENCE: [MessageHandler(Filters.text & ~Filters.command, get_experience)],
+        NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
+        EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_email)],
+        EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_experience)],
     },
-    fallbacks=[CommandHandler("cancel", cancel)],
+    fallbacks=[CommandHandler("cancel", cancel)]
 )
-
-dispatcher.add_handler(conv_handler)
-
-def run_flask():
-    app.run(host="0.0.0.0", port=5000)
-
-def run_telegram():
-    updater.start_polling()
-    updater.idle()
-
-if __name__ == "__main__":
-    threading.Thread(target=run_flask).start()
-    threading.Thread(target=run_telegram).start()
