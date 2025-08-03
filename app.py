@@ -38,20 +38,18 @@ def get_email(update: Update, context: CallbackContext):
 def get_experience(update: Update, context: CallbackContext):
     context.user_data["experience"] = update.message.text
     update.message.reply_text("Danke.")
+    name = context.user_data["name"]
     user_id = update.message.from_user.id
     bot.send_message(chat_id=user_id, text="Hier ist der Gruppenlink:\nhttps://t.me/Swissgoldsingal")
-    return ConversationHandler.END        bot.send_message(chat_id=user_id, text="✅ Danke! Du wirst gleich in die Gruppe aufgenommen.")
-        bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
+    bot.send_message(chat_id=user_id, text="✅ Danke! Du wirst gleich in die Gruppe aufgenommen.")
+    bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
 
-        if BROKER_LINK:
-            bot.send_message(chat_id=GROUP_ID, text=f"📥 {name}, hier ist dein Broker-Link:\n{BROKER_LINK}")
+    if BROKER_LINK:
+        bot.send_message(chat_id=GROUP_ID, text=f"📈 {name}, hier ist dein Broker-Link:\n{BROKER_LINK}")
 
-        bot.invite_chat_member(chat_id=GROUP_ID, user_id=user_id)
-    except Exception as e:
-        print("Fehler beim Hinzufügen:", e)
+    bot.invite_chat_member(chat_id=GROUP_ID, user_id=user_id)
 
     return ConversationHandler.END
-
 def cancel(update: Update, context: CallbackContext):
     update.message.reply_text("Abgebrochen.")
     return ConversationHandler.END
