@@ -4,10 +4,10 @@ from flask import Flask, request
 from telegram import Update, Bot
 from telegram.ext import (
     ApplicationBuilder,
-    ContextTypes,
     CommandHandler,
     MessageHandler,
     ConversationHandler,
+    ContextTypes,
     filters,
 )
 
@@ -18,7 +18,7 @@ GROUP_LINK = "https://t.me/swissgoldsingal"
 
 # Flask App
 app = Flask(__name__)
-bot_instance = Bot(BOT_TOKEN)  # getrenntes Bot-Objekt nur für Webhook
+application = None  # globale Variable für Telegram-Bot
 
 # States
 NAME, EMAIL, EXPERIENCE = range(3)
@@ -46,17 +46,19 @@ async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Webhook für TradingView
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    global application
     data = request.json
     msg = data.get("message", "⚠️ Kein Text enthalten")
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(bot_instance.send_message(chat_id=GROUP_ID, text=msg))
-    loop.close()
-    return "OK", 200
+    if application:
+        asyncio.run(application.bot.send_message(chat_id=GROUP_ID, text=msg))
+        return "OK", 200
+    else:
+        return "❌ Bot nicht bereit", 500
 
-# Telegram-Bot starten
-async def telegram_bot():
-    app_bot = ApplicationBuilder().token(BOT_TOKEN).build()
+# Telegram Bot starten
+async def run_bot():
+    global application
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -68,13 +70,13 @@ async def telegram_bot():
         fallbacks=[],
     )
 
-    app_bot.add_handler(conv_handler)
-    print("✅ Telegram-Bot läuft...")
-    await app_bot.run_polling()
+    application.add_handler(conv_handler)
+    print("✅ Bot läuft...")
+    await application.run_polling()
 
-# Flask + Telegram parallel starten
+# Start Flask & Telegram parallel
 def start_all():
-    threading.Thread(target=lambda: asyncio.run(telegram_bot())).start()
+    threading.Thread(target=lambda: asyncio.run(run_bot())).start()
     app.run(host="0.0.0.0", port=5000)
 
 if __name__ == "__main__":
