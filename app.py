@@ -38,6 +38,7 @@ async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["experience"] = update.message.text
     await update.message.reply_text("Danke.")
+
     name = context.user_data["name"]
     user_id = update.message.from_user.id
 
@@ -80,3 +81,18 @@ conv_handler = ConversationHandler(
     },
     fallbacks=[CommandHandler("cancel", cancel)],
 )
+
+application = ApplicationBuilder().token(BOT_TOKEN).build()
+application.add_handler(conv_handler)
+
+if __name__ == "__main__":
+    import threading
+
+    def run_telegram():
+        application.run_polling()
+
+    def run_flask():
+        app.run(port=5000)
+
+    threading.Thread(target=run_telegram).start()
+    threading.Thread(target=run_flask).start()
