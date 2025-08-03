@@ -1,83 +1,76 @@
-import threading
-import asyncio
-from flask import Flask, request
-from telegram import Update, Bot
+from telegram import Bot, Update
 from telegram.ext import (
-    ApplicationBuilder,
+    Updater,
     CommandHandler,
     MessageHandler,
+    Filters,
     ConversationHandler,
-    ContextTypes,
-    filters,
+    CallbackContext,
 )
+from flask import Flask, request
+import threading
+import requests
 
-# Konfiguration
 BOT_TOKEN = "8226474584:AAGcRUWTdLAcwMmHLnKBD-GREeUsoUXYPQ"
 GROUP_ID = -1002845601347
 GROUP_LINK = "https://t.me/swissgoldsingal"
 
-# Flask App
-app = Flask(__name__)
-application = None  # globale Variable für Telegram-Bot
-
-# States
 NAME, EMAIL, EXPERIENCE = range(3)
 
-# Telegram Bot Logik
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Willkommen! Wie heisst du?")
+app = Flask(__name__)
+bot = Bot(BOT_TOKEN)
+
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text("Willkommen! Wie heisst du?")
     return NAME
 
-async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def get_name(update: Update, context: CallbackContext):
     context.user_data["name"] = update.message.text
-    await update.message.reply_text("Wie ist deine E-Mail-Adresse?")
+    update.message.reply_text("Wie ist deine E-Mail-Adresse?")
     return EMAIL
 
-async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def get_email(update: Update, context: CallbackContext):
     context.user_data["email"] = update.message.text
-    await update.message.reply_text("Wie viel Trading-Erfahrung hast du?")
+    update.message.reply_text("Wie viel Trading-Erfahrung hast du?")
     return EXPERIENCE
 
-async def get_experience(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def get_experience(update: Update, context: CallbackContext):
     context.user_data["experience"] = update.message.text
-    await update.message.reply_text(f"📈 Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
+    update.message.reply_text(f"📈 Danke! Hier ist der Link zur Signalgruppe:\n{GROUP_LINK}")
     return ConversationHandler.END
 
-# Webhook für TradingView
-@app.route("/webhook", methods=["POST"])
+@app.route('/webhook', methods=['POST'])
 def webhook():
-    global application
     data = request.json
-    msg = data.get("message", "⚠️ Kein Text enthalten")
-    if application:
-        asyncio.run(application.bot.send_message(chat_id=GROUP_ID, text=msg))
+    message = data.get("message", "⚠️ Kein Text enthalten")
+    try:
+        bot.send_message(chat_id=GROUP_ID, text=message)
         return "OK", 200
-    else:
-        return "❌ Bot nicht bereit", 500
+    except Exception as e:
+        print("Webhook-Fehler:", e)
+        return "Fehler", 500
 
-# Telegram Bot starten
-async def run_bot():
-    global application
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
+def run_telegram():
+    updater = Updater(BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
-            EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_email)],
-            EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_experience)],
+            NAME: [MessageHandler(Filters.text & ~Filters.command, get_name)],
+            EMAIL: [MessageHandler(Filters.text & ~Filters.command, get_email)],
+            EXPERIENCE: [MessageHandler(Filters.text & ~Filters.command, get_experience)],
         },
         fallbacks=[],
     )
 
-    application.add_handler(conv_handler)
-    print("✅ Bot läuft...")
-    await application.run_polling()
+    dp.add_handler(conv_handler)
+    updater.start_polling()
+    updater.idle()
 
-# Start Flask & Telegram parallel
-def start_all():
-    threading.Thread(target=lambda: asyncio.run(run_bot())).start()
-    app.run(host="0.0.0.0", port=5000)
+def run_flask():
+    app.run(host='0.0.0.0', port=5000)
 
-if __name__ == "__main__":
-    start_all()
+if __name__ == '__main__':
+    threading.Thread(target=run_telegram).start()
+    run_flask()
