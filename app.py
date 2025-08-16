@@ -1,35 +1,20 @@
-import os
 import threading
 import logging
 from flask import Flask, request
 from telegram import Bot, Update, ParseMode
-from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    ConversationHandler,
-    CallbackContext,
-)
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, CallbackContext
 
-# --------- CONFIG ---------
-BOT_TOKEN = os.getenv(8226474584)
+BOT_TOKEN = "8226474584:AAHoTLwWAiLiLsBNnNX_CuUukzMTNWdsc-o"
 GROUP_ID = -1002845601347
 GROUP_LINK = "https://t.me/swissgoldsingal"
 BROKER_LINK = "https://go.ironfx.com/visit/?bta=57545&brand=ironfx"
 
-# --------- LOGGING ---------
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    level=logging.INFO,
-)
+logging.basicConfig(format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("telegram-bot")
 
-# --------- FLASK ---------
 app = Flask(__name__)
 bot = Bot(BOT_TOKEN)
 
-# States
 NAME, EMAIL, EXPERIENCE = range(3)
 
 WELCOME_TEXT = "Willkommen! Wie heisst du?"
@@ -40,8 +25,7 @@ JOIN_MSG = (
     "📈 Danke, {name}!\n\n"
     f"👉 Signalgruppe: {GROUP_LINK}\n"
     f"👉 Broker-Link: {BROKER_LINK}\n\n"
-    "🎁 *Gewinnspiel:* Bei einer Einzahlung von *300 CHF/EUR+* nimmst du automatisch "
-    "am Trip nach *Dubai* teil.\n\n"
+    "🎁 *Gewinnspiel:* Bei einer Einzahlung von *300 CHF/EUR+* nimmst du automatisch am Trip nach *Dubai* teil.\n\n"
     "Schreibe /broker, um den Link jederzeit erneut zu bekommen."
 )
 
@@ -71,16 +55,8 @@ def get_experience(update: Update, context: CallbackContext):
     context.user_data["experience"] = update.message.text.strip()
     user_id = update.effective_user.id
     try:
-        bot.send_message(
-            chat_id=user_id,
-            text=JOIN_MSG.format(name=name),
-            parse_mode=ParseMode.MARKDOWN,
-            disable_web_page_preview=True,
-        )
-        bot.send_message(
-            chat_id=GROUP_ID,
-            text=f"🎉 {name} ist neu in der Gruppe!",
-        )
+        bot.send_message(chat_id=user_id, text=JOIN_MSG.format(name=name), parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
+        bot.send_message(chat_id=GROUP_ID, text=f"🎉 {name} ist neu in der Gruppe!")
     except Exception as e:
         logger.error(f"Senden fehlgeschlagen: {e}")
     return ConversationHandler.END
@@ -93,11 +69,7 @@ def cancel(update: Update, context: CallbackContext):
 def cmd_broker(update: Update, context: CallbackContext):
     if update.effective_chat.type != "private":
         return
-    update.message.reply_text(
-        BROKER_MSG,
-        parse_mode=ParseMode.MARKDOWN,
-        disable_web_page_preview=True,
-    )
+    update.message.reply_text(BROKER_MSG, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
 
 def unknown(update: Update, context: CallbackContext):
     return
